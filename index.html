@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Amazon Listings Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEFF2; --panel:#FFFFFF; --ink:#18202B; --muted:#5D6877; --line:#D5DAE1;
+  --amber:#D99A12; --amber-soft:#FCF1D6; --teal:#2C6B66; --red:#B4372F; --hover:#F4F6F8; --side:#DDE1E7; --side-hover:#CFD4DC; --sel:#A85F00;
+  --font:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12161C; --panel:#1A2029; --ink:#E7EAEE; --muted:#97A1AE; --line:#2C3440;
+    --amber:#F0B33A; --amber-soft:#3A2E14; --teal:#5FB2AA; --red:#E06A60; --hover:#212935; --side:#0E1217; --side-hover:#1C232D; --sel:#F0B33A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12161C; --panel:#1A2029; --ink:#E7EAEE; --muted:#97A1AE; --line:#2C3440;
+  --amber:#F0B33A; --amber-soft:#3A2E14; --teal:#5FB2AA; --red:#E06A60; --hover:#212935; --side:#0E1217; --side-hover:#1C232D; --sel:#F0B33A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+button,input,textarea,select{font:inherit;color:inherit}
+:root{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+select{color:var(--ink)}
+select option{background:var(--panel);color:var(--ink)}
+select option:disabled{color:var(--muted)}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:300px 1fr;height:100%}
+/* Sidebar */
+.side{background:var(--side);border-right:1px solid color-mix(in srgb,var(--ink) 12%,transparent);display:flex;flex-direction:column;min-height:0}
+.brand{padding:20px 20px 14px;display:flex;align-items:center;gap:10px}
+.bulb{width:26px;height:26px;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 50% 40%,#FFE6A3 0,var(--amber) 55%,#8A5A00 100%);box-shadow:0 0 14px color-mix(in srgb,var(--amber) 55%,transparent);flex:none}
+.brand{cursor:pointer;border-radius:10px;user-select:none}
+.brand:hover h1{color:var(--sel)}
+.brand h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.theme-sw{display:inline-flex;align-self:flex-start;margin:0 20px 10px;padding:2px;border:1px solid var(--line);border-radius:7px;background:var(--panel);gap:2px}
+.theme-sw button{border:0;background:none;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600;line-height:1.4;color:var(--muted)}
+.theme-sw button:hover{background:var(--hover);color:var(--ink)}
+.theme-sw button.on{background:var(--ink);color:var(--panel)}
+.side-tools{padding:0 16px 12px;display:flex;flex-direction:column;gap:8px}
+.search{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 14px;font-weight:600}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9}
+.btn.danger{color:var(--red)}
+.btn.small{padding:4px 10px;font-size:13px}
+.list{overflow-y:auto;flex:1;padding:4px 8px 16px}
+.item{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;margin-bottom:2px}
+.item:hover{background:var(--side-hover)}
+.item.active{background:none}
+.item.active .sku{color:var(--sel);font-weight:700}
+.item .sku{font-family:var(--mono);font-weight:600;font-size:13.5px}
+.item .t{color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.count{padding:0 20px 8px;color:var(--muted);font-size:13px}
+.grp{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;font-weight:700}
+.grp:hover{background:var(--side-hover)}
+.grp .chev{display:inline-block;width:12px;color:var(--muted);transition:transform .15s}
+.grp.open .chev{transform:rotate(90deg)}
+.grp .n{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.grp.acc{font-size:15px}
+.grp.mkt{font-size:13.5px;padding-left:28px}
+.mkt-tag{font-family:var(--mono);font-size:12px;background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);padding:1px 7px;border-radius:5px}
+.sub{padding-left:30px}
+.item .where{font-size:12px;color:var(--muted)}
+.crumb{font-size:14px;color:var(--muted);font-weight:600;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pname{font-size:20px;font-weight:800;margin:10px 0 0;letter-spacing:-.01em}
+@media (prefers-reduced-motion:reduce){.grp .chev{transition:none}}
+.grp.mkt.cur{background:none}
+.grp.mkt.cur .mkt-tag{background:var(--amber);border-color:var(--amber);color:#1A1300}
+.moveSel{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-weight:600;width:auto;max-width:96px;cursor:pointer}
+.moveSel option{font-weight:400}
+.ctxline{font-size:14px;color:var(--muted);margin-top:6px}
+.status{display:inline-flex;align-items:center;gap:8px;margin-left:10px;vertical-align:middle;flex-wrap:wrap}
+.badge-ok{display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 45%,transparent);padding:4px 10px;border-radius:999px;font-weight:700;font-size:13.5px}
+.btn.listbtn{background:var(--teal);border-color:var(--teal);color:#fff;padding:5px 12px;font-size:13.5px}
+.btn.listbtn:hover{opacity:.9;background:var(--teal)}
+.linkbtn{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:2px}
+.item .st{font-size:11.5px;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:4px;vertical-align:1px;font-family:var(--font)}
+.item .st.ok{color:var(--teal);background:color-mix(in srgb,var(--teal) 12%,transparent)}
+.item .st.no{color:var(--muted);background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.htmlcode{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto}
+.empty-list{padding:20px;color:var(--muted);font-size:14px}
+/* Images */
+.imgs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+@media (max-width:1100px){.imgs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:480px){.imgs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.imgs.drag{outline:2px dashed var(--amber);outline-offset:4px;border-radius:10px}
+.slot{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.slot img{width:100%;height:100%;object-fit:contain;display:block}
+.slot.empty{background:var(--bg);border-style:dashed}
+.slot-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:100%;cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:600}
+.slot-add span{font-size:24px;line-height:1;font-weight:400}
+.slot-add:hover{background:var(--hover);color:var(--ink)}
+.slot-n{position:absolute;top:6px;left:6px;font-size:11px;font-weight:700;background:var(--ink);color:var(--panel);padding:1px 6px;border-radius:4px}
+.slot-bar{position:absolute;right:6px;bottom:6px;display:flex;gap:4px;transition:opacity .15s}
+@media (hover:hover){.slot .slot-bar{opacity:0;pointer-events:none}.slot:hover .slot-bar,.slot:focus-within .slot-bar{opacity:1;pointer-events:auto}}
+.slot-act{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;width:26px;height:26px;padding:0;font-size:13px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.slot-act:hover{background:var(--hover)}
+.slot-act.rm{color:var(--red)}
+.slot-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--panel) 80%,transparent);font-size:12.5px;font-weight:600;color:var(--muted)}
+.imgs-note{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.filebtn{display:inline-flex;align-items:center;cursor:pointer}
+/* ASIN */
+.asin-sec{border-color:color-mix(in srgb,var(--teal) 45%,transparent)}
+.asins{display:flex;flex-wrap:wrap;gap:8px}
+.asins:empty{display:none}
+.asin{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 6px 4px 10px;font-family:var(--mono);font-weight:600;font-size:14px;background:var(--bg)}
+.asin a.amz{color:var(--teal);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.asin a.amz:hover,.asin-prev a.amz:hover{text-decoration:underline}
+.asin-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.asin-row input{flex:1}
+.asin-row .asin-rm{width:36px;height:36px;flex:none}
+.asin-in:not(:placeholder-shown){text-transform:uppercase}
+.asin .x{border:0;background:none;color:var(--muted);padding:2px 5px;font-size:13px}
+.asin .x:hover{color:var(--red)}
+.asin-add{display:flex;gap:8px;flex-wrap:wrap}
+.asin-add input{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-family:var(--mono)}
+.asin-add input:not(:placeholder-shown){text-transform:uppercase}
+
+
+/* Listed list */
+.side-sep{height:1px;background:color-mix(in srgb,var(--ink) 12%,transparent);margin:10px 10px 8px}
+.grp.stat.on{color:var(--sel)}
+.grp.stat .ico{width:12px;color:var(--muted);text-align:center}
+.st-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.fbtn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--muted)}
+.fbtn:hover{background:var(--hover);color:var(--ink)}
+.fbtn.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:var(--hover)}
+.tbl .m{font-family:var(--mono);font-weight:600;font-size:13px;white-space:nowrap}
+.tbl .acc-c{font-weight:600;white-space:nowrap}
+.tbl .nm{color:var(--muted);font-size:12.5px;margin-top:2px;max-width:34ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.pill.ok{color:var(--teal);background:color-mix(in srgb,var(--teal) 12%,transparent)}
+.pill.no{color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.asin-c{display:flex;flex-wrap:wrap;gap:4px}
+.asin-c .asin-link{font-family:var(--mono);font-size:12.5px;font-weight:600;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.asin-c .asin-link:hover{background:var(--amber-soft);border-color:var(--amber);color:var(--sel)}
+.asin-c .none{color:var(--muted);font-size:13px}
+.tbl .lsd{color:var(--muted);font-size:12px;margin-top:3px;white-space:nowrap}
+
+/* Main */
+.main{overflow-y:auto;min-height:0}
+.wrap{max-width:900px;margin:0 auto;padding:28px 32px 60px}
+.back{display:none;margin-bottom:14px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.sku-big{font-family:var(--mono);font-weight:600;font-size:14px;background:var(--ink);color:var(--panel);padding:4px 10px;border-radius:6px;display:inline-block}
+.updated{color:var(--muted);font-size:13px;margin-top:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+.sec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.sec-h h2{margin:0;font-size:14px;font-weight:700;color:var(--muted)}
+.meter{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter.over{color:var(--red);font-weight:700}
+.copy{border:1px solid var(--line);background:none;border-radius:6px;padding:3px 9px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.copy:hover{color:var(--ink);background:var(--hover)}
+.copy.done{color:var(--teal);border-color:var(--teal)}
+.title-text{font-size:22px;font-weight:700;line-height:1.3;letter-spacing:-.01em;margin:0}
+.hl{font-size:15px;color:var(--ink)}
+.bullets{list-style:none;margin:0;padding:0}
+.bullets li{padding:12px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.bullets li:first-child{border-top:0;padding-top:4px}
+.bullets b{font-weight:700}
+.bullets .bm{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
+.desc{max-width:70ch}
+.desc h3{font-size:16px;margin:18px 0 6px}
+.desc h3:first-child{margin-top:0}
+.desc p{margin:0 0 8px;white-space:pre-line}
+.terms{display:grid;gap:10px}
+.term{border:1px dashed var(--line);border-radius:8px;padding:10px 12px}
+.term-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+.term-body{font-size:14px;word-break:break-word}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Editor */
+.field{margin-bottom:16px}
+.field label{display:flex;justify-content:space-between;font-weight:600;font-size:13.5px;margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);resize:vertical}
+.field textarea{min-height:80px}
+.field .mono{font-family:var(--mono)}
+.fsel{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:600;cursor:pointer}
+.paste{background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+.paste p{margin:0 0 10px;font-size:14px}
+.paste textarea{min-height:160px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.err{color:var(--red);font-size:13.5px;margin-top:6px}
+.welcome{text-align:center;padding:80px 20px;color:var(--muted)}
+.welcome .bulb{width:56px;height:56px;margin:0 auto 18px}
+.welcome h2{color:var(--ink);font-size:22px;margin:0 0 6px}
+.notice{background:var(--amber-soft);padding:8px 12px;font-size:13px;border-radius:8px;margin:0 16px 10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:8px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .app.detail .side{display:none}
+  .app:not(.detail) .main{display:none}
+  .back{display:inline-block}
+  .wrap{padding:18px 16px 50px}
+  .row2{grid-template-columns:1fr}
+  .bullets li{grid-template-columns:1fr}
+  .bullets .bm{text-align:left}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand" id="homeBtn" role="button" tabindex="0" title="Back to home"><div class="bulb" aria-hidden="true"></div><h1>Amazon Listings Vault</h1></div>
+    <div class="theme-sw" role="group" aria-label="Theme"><button type="button" data-theme-set="light">☀︎ Light</button><button type="button" data-theme-set="dark">☾ Dark</button></div>
+    <script>
+    (function(){
+      const root = document.documentElement;
+      const sysDark = () => window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+      function apply(t){
+        root.setAttribute("data-theme", t);
+        document.querySelectorAll("[data-theme-set]").forEach(b=>b.classList.toggle("on", b.dataset.themeSet===t));
+      }
+      let saved = null; try{ saved = localStorage.getItem("lv:theme"); }catch(e){}
+      apply(saved=="light"||saved=="dark" ? saved : (sysDark()?"dark":"light"));
+      document.addEventListener("click", e=>{
+        const b = e.target.closest("[data-theme-set]"); if(!b) return;
+        apply(b.dataset.themeSet);
+        try{ localStorage.setItem("lv:theme", b.dataset.themeSet); }catch(err){}
+      });
+    })();
+    </script>
+    <div id="notice"></div>
+    <div class="side-tools">
+      <button class="btn primary" id="newBtn">+ New listing</button>
+      <input class="search" id="search" type="search" placeholder="Search SKU or title">
+    </div>
+    <div class="count" id="count"></div>
+    <nav class="list" id="list" aria-label="Saved SKUs"></nav>
+  </aside>
+  <main class="main" id="main"><div class="wrap" id="view"></div></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBaxC9Y2-ZBxuQ_nvK2WiNCekK0AOI3wFs",
+  authDomain: "nivarnan-86f44.firebaseapp.com",
+  projectId: "nivarnan-86f44",
+  storageBucket: "nivarnan-86f44.firebasestorage.app",
+  messagingSenderId: "55786377146",
+  appId: "1:55786377146:web:101366c940d7a842acd783"
+};
+const LIMITS = { title:200, bullet:500, backendBytes:249 };
+let listings = {};      // key -> listing
+let selected = null;    // key
+let mode = "welcome";   // welcome | view | edit
+let editingKey = null;
+let db = null, col = null, canWrite = true, store = "memory";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const bytes = s => new TextEncoder().encode(s || "").length;
+const clean = v => String(v||"").trim().replace(/[^A-Za-z0-9_\-.~:@+]/g, "_");
+const keyFor = (a,m,sku) => (clean(a)+"__"+clean(m)+"__"+clean(sku)).slice(0,190);
+const ACC_LABEL = { "SRM":"SRM Supplies" }; // display names (saved data keeps the short key)
+const accName = a => ACC_LABEL[a] || a;
+const accOf = L => L.account ? accName(L.account) : "Unassigned";
+const mktOf = L => L.market || "—";
+const nameOf = L => L.productName || L.title || "Untitled";
+const openAcc = new Set(), openMkt = new Set();
+// only one account and one marketplace open at a time
+function openOnly(a, m){ openAcc.clear(); openAcc.add(a); if(m!=null){ openMkt.clear(); openMkt.add(a+"|"+m); } }
+const ACCOUNTS = ["LEDSone","DCVoltage","SRM","Homin GmbH"];
+const MARKETS = ["UK","DE","FR"];
+const MARKET_ORDER = { "Homin GmbH": ["DE","FR","UK"] }; // per-account order
+const marketsFor = a => MARKET_ORDER[a] || MARKETS;
+let ctx = null; // {acc, mkt} — currently picked account + marketplace
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600); }
+
+async function copyText(text, btn){
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch(e){}
+  if(!ok){
+    const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} ta.remove();
+  }
+  if(btn){ const o=btn.textContent; btn.textContent=ok?"Copied":"Copy failed"; btn.classList.add("done"); setTimeout(()=>{btn.textContent=o;btn.classList.remove("done")},1300); }
+}
+
+/* ---------- Downloads ---------- */
+let dl = null;
+async function downloadFile(filename, text, mime){
+  const blob = text instanceof Blob ? text : new Blob([text], {type: mime + ";charset=utf-8"});
+  if(dl){
+    try{ await dl.save({filename, data: blob}); toast("Downloaded " + filename); }
+    catch(e){ if(e && e.code!=="declined") toast("Download failed — try again"); }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function listingText(L){
+  return [
+    "SKU:\n"+L.sku, ...((L.asins||[]).length?["ASIN:\n"+L.asins.join(", ")]:[]), "Title:\n"+L.title, "Item Highlights:\n"+L.highlights,
+    "Bullet points:\n"+(L.bullets||[]).map(b=>"• "+b).join("\n"),
+    "Description:\n"+L.description,
+    ...(L.backend||[]).map((b,i)=>`Backend search terms ${i+1}:\n${b}`)
+  ].join("\n\n");
+}
+const safeName = s => s.replace(/[^A-Za-z0-9_\-.]/g,"_");
+function downloadOne(){
+  const L = listings[selected]; if(!L) return;
+  downloadFile(safeName(L.sku)+".txt", listingText(L), "text/plain");
+}
+function downloadAll(){
+  const keys = sortedKeys();
+  if(!keys.length) return toast("No listings to download yet");
+  const cell = v => '"' + String(v??"").replace(/"/g,'""') + '"';
+  const head = ["SKU","ASINs","Title","Item Highlights","Bullet 1","Bullet 2","Bullet 3","Bullet 4","Bullet 5","Description","Backend 1","Backend 2","Backend 3","Backend 4","Backend 5","Last saved"];
+  const rows = keys.map(k => { const L = listings[k]; const b=[...(L.bullets||[]),"","","","",""].slice(0,5); const t=[...(L.backend||[]),"","","","",""].slice(0,5);
+    return [L.sku,(L.asins||[]).join(" "),L.title,L.highlights,...b,L.description,...t,L.updatedAt?new Date(L.updatedAt).toLocaleString():""].map(cell).join(","); });
+  const d = new Date().toISOString().slice(0,10);
+  downloadFile(`listings-${d}.csv`, "\uFEFF" + [head.map(cell).join(","), ...rows].join("\r\n"), "text/csv");
+}
+
+/* ---------- Parser for pasted listing text ---------- */
+function parseListing(text){
+  const out = { title:"", highlights:"", bullets:[], description:"", backend:["","","","",""] };
+  const lines = text.replace(/\r/g,"").split("\n");
+  let cur = null, buf = [];
+  const flush = () => {
+    if(!cur) return;
+    const body = buf.join("\n").trim();
+    if(cur === "title") out.title = body.replace(/\n+/g," ");
+    else if(cur === "highlights") out.highlights = body.replace(/\n+/g," ");
+    else if(cur === "description") out.description = body;
+    else if(cur === "bullets"){
+      const items = []; 
+      body.split("\n").forEach(l => {
+        const t = l.trim(); if(!t) return;
+        if(/^[•\-\*·▪●]\s*/.test(t)) items.push(t.replace(/^[•\-\*·▪●]\s*/,""));
+        else if(items.length) items[items.length-1] += " " + t; else items.push(t);
+      });
+      out.bullets = items;
+    } else if(cur.startsWith("backend")){
+      const n = parseInt(cur.split(":")[1]||"1",10)-1;
+      if(n>=0 && n<5) out.backend[n] = body.replace(/\n+/g," ");
+    }
+  };
+  for(const line of lines){
+    const m = line.match(/^\s*(title|item highlights|highlights|bullet points|bullets|description|backend search terms\s*(\d*)|search terms\s*(\d*))\s*:\s*(.*)$/i);
+    if(m){
+      flush(); buf=[];
+      const h = m[1].toLowerCase();
+      if(h==="title") cur="title";
+      else if(h.includes("highlight")) cur="highlights";
+      else if(h.startsWith("bullet")) cur="bullets";
+      else if(h==="description") cur="description";
+      else cur="backend:"+(m[2]||m[3]||(out.backend.findIndex(b=>!b)+1)||1);
+      if(m[4]) buf.push(m[4]);
+    } else if(cur){ buf.push(line); }
+  }
+  flush();
+  return out;
+}
+
+/* ---------- Description renderer ---------- */
+function renderDesc(text){
+  const blocks = (text||"").split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  return blocks.map(b => {
+    const ls = b.split("\n");
+    let html = "";
+    if(ls.length>1 && ls[0].length<50 && !/[.:;!?]$/.test(ls[0]) && !ls[0].includes(":")){
+      html += `<h3>${esc(ls[0])}</h3>`; ls.shift();
+    } else if(ls.length===1 && b.length<50 && !/[.!?]$/.test(b) && !b.includes(":")){
+      return `<h3>${esc(b)}</h3>`;
+    }
+    return html + `<p>${esc(ls.join("\n"))}</p>`;
+  }).join("");
+}
+
+/* ---------- English translation ---------- */
+let showEn = false, translating = false; const enCache = {};
+const MKT_LANG = {UK:"en",US:"en",DE:"de",FR:"fr",IT:"it",ES:"es",NL:"nl",SE:"sv",PL:"pl",BE:"fr"};
+const LANG_NAME = {de:"German",fr:"French",it:"Italian",es:"Spanish",nl:"Dutch",sv:"Swedish",pl:"Polish",en:"English"};
+let editEn = false;
+async function gtx(text, tl="en", sl="auto", seen){
+  if(!text || !text.trim()) return text || "";
+  const parts = text.split(/(\n\s*\n)/); // block by block, keep blank lines
+  const out = [];
+  for(const part of parts){
+    if(!part.trim()){ out.push(part); continue; }
+    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=`+encodeURIComponent(part));
+    if(!r.ok) throw new Error("translate "+r.status);
+    const j = await r.json();
+    if(seen && j[2]) seen.push(j[2]);
+    out.push((j[0]||[]).map(x=>x[0]).join(""));
+  }
+  return out.join("");
+}
+async function getSample(){
+  try{ return window.claude && window.claude.use ? await window.claude.use("sample") : null; }catch(e){ return null; }
+}
+// returns {items, lang} — lang = detected source language
+async function translateAll(strings, tl="en", sl="auto"){
+  const sample = await getSample();
+  if(sample){
+    const target = LANG_NAME[tl] || tl;
+    const res = await sample.json(`Translate each string in this JSON array into natural ${target}${sl!=="auto"?` (from ${LANG_NAME[sl]||sl})`:""}. Keep line breaks, "- " list markers, "HEADING:" prefixes in the same style, numbers and product codes exactly. Empty strings stay empty. Return ONLY JSON: {"lang":"<ISO 639-1 code of the source language>","items":[...same length and order...]}\n\n${JSON.stringify(strings)}`);
+    if(res && Array.isArray(res.items) && res.items.length===strings.length) return {items:res.items.map(String), lang:res.lang||sl};
+    throw new Error("bad translation");
+  }
+  const seen = [];
+  const items = await Promise.all(strings.map(t=>gtx(t, tl, sl, seen)));
+  const counts = {}; seen.forEach(l=>counts[l]=(counts[l]||0)+1);
+  const lang = Object.keys(counts).sort((x,y)=>counts[y]-counts[x])[0] || sl;
+  return {items, lang};
+}
+async function toggleEnglish(){
+  const L = listings[selected]; if(!L) return;
+  const c = enCache[selected];
+  if(showEn && c && c.v===L.updatedAt){ showEn=false; renderView(); return; }
+  if(c && c.v===L.updatedAt){ showEn=true; renderView(); return; }
+  translating = true; renderView();
+  try{
+    const bl = L.bullets||[], bk = [...(L.backend||[]),"","","","",""].slice(0,5);
+    const src = [L.title||"", L.highlights||"", L.description||"", ...bl, ...bk];
+    const {items:t, lang} = await translateAll(src);
+    enCache[selected] = { v:L.updatedAt, lang: MKT_LANG[L.market] || lang, data:{ title:t[0], highlights:t[1], description:t[2], bullets:t.slice(3,3+bl.length), backend:t.slice(3+bl.length) } };
+    showEn = true;
+  }catch(e){ console.error(e); toast("Translation failed — check internet and try again"); }
+  translating = false; renderView();
+}
+
+/* Description -> Amazon-friendly HTML (p, b, br, ul, li) */
+function descToHtml(text){
+  const e = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const isHead = l => l.length<50 && !/[.:;!?]$/.test(l) && !l.includes(":");
+  const blocks = (text||"").split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  const sections = [];
+  blocks.forEach(b => {
+    let ls = b.split("\n").map(l=>l.trim()).filter(Boolean);
+    let head = null;
+    if(ls.length && isHead(ls[0]) && (ls.length>1 || !/[.!?]$/.test(b))){ head = ls.shift(); }
+    // a heading alone in its block belongs to the next block
+    if(head && !ls.length){ sections.push({head, parts:[]}); return; }
+    const last = sections[sections.length-1];
+    const sec = (!head && last && last.head && !last.parts.length) ? last : {head, parts:[]};
+    if(sec!==last) sections.push(sec);
+    let para = [], list = [];
+    const flushP = () => { if(para.length){ sec.parts.push({t:"p", v:para}); para=[]; } };
+    const flushL = () => { if(list.length){ sec.parts.push({t:"ul", v:list}); list=[]; } };
+    ls.forEach(l => { const m = l.match(/^[-•*·]\s+(.*)$/); if(m){ flushP(); list.push(m[1]); } else { flushL(); para.push(l); } });
+    flushP(); flushL();
+  });
+  return sections.map(sec => {
+    const out = []; let headDone = !sec.head;
+    sec.parts.forEach(pt => {
+      if(pt.t==="p"){
+        out.push(`<p>${headDone?"":`<b>${e(sec.head)}</b><br>`}${pt.v.map(e).join("<br>")}</p>`); headDone = true;
+      } else {
+        if(!headDone){ out.push(`<p><b>${e(sec.head)}</b></p>`); headDone = true; }
+        out.push(`<ul>\n${pt.v.map(x=>`  <li>${e(x)}</li>`).join("\n")}\n</ul>`);
+      }
+    });
+    if(!headDone) out.push(`<p><b>${e(sec.head)}</b></p>`);
+    return out.join("\n");
+  }).join("\n<br>\n\n");
+}
+
+// Converts text to Unicode bold (𝐁𝐨𝐥𝐝) so the bold survives a plain-text paste
+function toUniBold(s){
+  return [...String(s).normalize("NFD")].map(ch=>{
+    const c = ch.codePointAt(0);
+    if(c>=65&&c<=90) return String.fromCodePoint(0x1D400+c-65);
+    if(c>=97&&c<=122) return String.fromCodePoint(0x1D41A+c-97);
+    if(c>=48&&c<=57) return String.fromCodePoint(0x1D7CE+c-48);
+    return ch;
+  }).join("").normalize("NFC");
+}
+function boldBullet(b){
+  const m = String(b||"").match(/^([^:]{3,70}):\s*(.*)$/s);
+  return m ? `${toUniBold(m[1].trim())}: ${m[2]}` : b;
+}
+
+function splitBullet(b){
+  const m = b.match(/^([^:]{3,70}):\s*(.*)$/s);
+  return m ? `<b>${esc(m[1])}:</b> ${esc(m[2])}` : esc(b);
+}
+
+/* ---------- Rendering ---------- */
+function sortedKeys(){
+  return Object.keys(listings).sort((a,b)=> (listings[a].createdAt||listings[a].updatedAt||0)-(listings[b].createdAt||listings[b].updatedAt||0)); // oldest first, newly added at the bottom
+}
+
+
+/* ---------- Listed list (status overview) ---------- */
+let statusFilter = "all";
+const AMZ_TLD = {UK:"co.uk",DE:"de",FR:"fr",IT:"it",ES:"es",NL:"nl",SE:"se",PL:"pl",BE:"com.be",US:"com"};
+function statusKeys(){
+  const accRank = a => { const i = ACCOUNTS.indexOf(a); return i<0 ? 99 : i; };
+  return Object.keys(listings).sort((x,y) => {
+    const A = listings[x], B = listings[y];
+    const ha = (A.asins||[]).length ? 0 : 1, hb = (B.asins||[]).length ? 0 : 1;
+    if(ha!==hb) return ha-hb; // listings with an ASIN first, no-ASIN ones at the bottom
+    return (A.createdAt||A.updatedAt||0) - (B.createdAt||B.updatedAt||0); // oldest first, newly added at the bottom
+  });
+}
+function renderStatus(){
+  const v = $("#view");
+  const all = statusKeys();
+  const nL = all.filter(k=>listings[k].listed).length, nN = all.length - nL;
+  const keys = all.filter(k => statusFilter==="all" || (statusFilter==="listed") === !!listings[k].listed);
+  window._asinCopy = {};
+  const rows = keys.map((k,i) => { const L = listings[k];
+    const asins = (L.asins||[]).map(a => { const u = `https://www.amazon.${AMZ_TLD[L.market]||"co.uk"}/dp/${encodeURIComponent(a)}`; return `<a class="asin-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(a)} on Amazon ${esc(L.market||"")}">${esc(a)} ↗</a>`; }).join("");
+    return `<tr>
+      <td class="acc-c">${esc(L.account?accName(L.account):"Not sorted")}</td>
+      <td>${L.account?`<span class="mkt-tag">${esc(mktOf(L))}</span>`:"—"}</td>
+      <td><div class="m">${esc(L.sku)}</div></td>
+      <td>${L.listed?`<span class="pill ok">✓ Listed</span>`:`<span class="pill no">Not listed</span>`}</td>
+      <td><div class="asin-c">${asins || `<span class="none">No ASIN</span>`}</div></td>
+    </tr>`; }).join("");
+  v.innerHTML = `
+    <button class="btn small back" id="backBtn">← All SKUs</button>
+    <div class="head"><h2 style="margin:0;font-size:22px">Listed list<div class="ctxline">Every SKU with its listing status and ASINs</div></h2>
+      <div class="actions"><button class="btn small" id="dlStatusBtn">Download CSV</button></div></div>
+    <div class="st-sum">
+      <button class="fbtn ${statusFilter==="all"?"on":""}" data-sf="all">All · ${all.length}</button>
+      <button class="fbtn ${statusFilter==="listed"?"on":""}" data-sf="listed">Listed · ${nL}</button>
+      <button class="fbtn ${statusFilter==="not"?"on":""}" data-sf="not">Not listed · ${nN}</button>
+    </div>
+    ${keys.length ? `<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Brand</th><th>Market</th><th>SKU</th><th>Status</th><th>ASINs</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`
+      : `<div class="welcome" style="padding:50px 20px"><p>${all.length?"No listings in this filter.":"No listings yet."}</p></div>`}`;
+}
+function downloadStatus(){
+  const keys = statusKeys(); if(!keys.length) return toast("No listings to download yet");
+  const cell = v => '"' + String(v??"").replace(/"/g,'""') + '"';
+  const head = ["Brand","Market","SKU","Product","Status","Listed on","ASINs"];
+  const rows = keys.map(k => { const L = listings[k]; return [L.account?accName(L.account):"Not sorted", L.market||"", L.sku, nameOf(L), L.listed?"Listed":"Not listed", L.listedAt?new Date(L.listedAt).toLocaleDateString():"", (L.asins||[]).join(" ")].map(cell).join(","); });
+  downloadFile(`listed-list-${new Date().toISOString().slice(0,10)}.csv`, "\uFEFF"+[head.map(cell).join(","),...rows].join("\r\n"), "text/csv");
+}
+
+function renderList(){
+  const q = $("#search").value.trim().toLowerCase();
+  const all = sortedKeys();
+  const total = all.length;
+  $("#count").textContent = total ? `${total} listing${total>1?"s":""}` : "";
+  const itemHtml = (k, showWhere) => { const L = listings[k]; return `
+    <button class="item ${k===selected?"active":""}" data-k="${esc(k)}">
+      ${showWhere&&L.account?`<div class="where">${esc(accOf(L))} › ${esc(mktOf(L))}</div>`:""}
+      <div class="sku">${esc(L.sku)}${L.listed?`<span class="st ok">✓ Listed</span>`:`<span class="st no">Not listed</span>`}</div>
+    </button>`; };
+  if(q && total){
+    const keys = all.filter(k => { const L=listings[k]; return [L.sku,(L.asins||[]).join(" "),nameOf(L),L.title,accOf(L),mktOf(L)].join(" ").toLowerCase().includes(q); });
+    $("#list").innerHTML = keys.length ? keys.map(k=>itemHtml(k,true)).join("") : `<div class="empty-list">Nothing matches “${esc(q)}”.</div>`;
+    return;
+  }
+  const tree = {}; const unassigned = [];
+  all.forEach(k => { const L=listings[k]; if(!L.account){ unassigned.push(k); return; } ((tree[L.account] ||= {})[L.market||"—"] ||= []).push(k); });
+  const accs = [...ACCOUNTS, ...Object.keys(tree).filter(a=>!ACCOUNTS.includes(a)).sort()];
+  let html = accs.filter(a => tree[a]).map(a => {
+    const mk = [...marketsFor(a), ...Object.keys(tree[a]||{}).filter(m=>!MARKETS.includes(m)).sort()].filter(m => ((tree[a]||{})[m]||[]).length);
+    const n = mk.reduce((x,m)=>x+((tree[a]||{})[m]||[]).length,0);
+    const ao = openAcc.has(a);
+    return `<button class="grp acc ${ao?"open":""}" data-acc="${esc(a)}" aria-expanded="${ao}"><span class="chev">▸</span>${esc(accName(a))}<span class="n">${n}</span></button>
+      ${ao ? mk.map(m => { const id=a+"|"+m; const mo=openMkt.has(id); const ks=(tree[a]||{})[m]||[]; const cur=ctx&&ctx.acc===a&&ctx.mkt===m; return `
+        <button class="grp mkt ${mo?"open":""} ${cur?"cur":""}" data-mkt="${esc(id)}" aria-expanded="${mo}"><span class="chev">▸</span><span class="mkt-tag">${esc(m)}</span><span class="n">${ks.length}</span></button>
+        ${mo ? `<div class="sub">${ks.length ? ks.map(k=>itemHtml(k,false)).join("") : `<div class="empty-list" style="padding:6px 12px">No SKUs yet</div>`}</div>` : ""}`; }).join("") : ""}`;
+  }).join("");
+  if(unassigned.length){
+    const uo = openAcc.has("__un");
+    html += `<button class="grp acc ${uo?"open":""}" data-acc="__un" aria-expanded="${uo}"><span class="chev">▸</span>Not sorted yet<span class="n">${unassigned.length}</span></button>
+      ${uo ? `<div class="sub" style="padding-left:14px">${unassigned.map(k=>itemHtml(k,false)).join("")}</div>` : ""}`;
+  }
+  if(total){
+    const nL = all.filter(k=>listings[k].listed).length;
+    html += `<div class="side-sep"></div><button class="grp acc stat ${mode==="status"?"on":""}" id="statusBtn"><span class="ico">☰</span>Listed list<span class="n">${nL}/${total}</span></button>`;
+  }
+  $("#list").innerHTML = html || `<div class="empty-list">No listings yet. Press “+ New listing” to add your first one.</div>`;
+  $("#newBtn").textContent = "+ New listing";
+}
+
+function meter(n, max, unit="chars"){ return `<span class="meter ${n>max?"over":""}">${n} / ${max} ${unit}</span>`; }
+
+function renderView(){
+  const v = $("#view");
+  $("#app").classList.toggle("detail", mode!=="welcome");
+  if(mode==="welcome" || (mode==="view" && !listings[selected])){
+    $("#app").classList.remove("detail");
+    v.innerHTML = `<div class="welcome"><div class="bulb"></div><h2>Pick a listing</h2><p>Open a brand and marketplace on the left, or press “+ New listing” to add one.</p></div>`;
+    return;
+  }
+  if(mode==="status") return renderStatus();
+  if(mode==="edit") return renderEditor();
+
+  let L = listings[selected];
+  const backendFull = (L.backend||[]).filter(Boolean).join(" ");
+  const bTotal = bytes(backendFull);
+  const allText = [
+    "Title:\n"+L.title, "Item Highlights:\n"+L.highlights,
+    "Bullet points:\n"+(L.bullets||[]).map(b=>"• "+b).join("\n"),
+    "Description:\n"+L.description,
+    ...(L.backend||[]).map((b,i)=>`Backend search terms ${i+1}:\n${b}`)
+  ].join("\n\n");
+  const descHtml = descToHtml(L.description);
+  window._copy = { descHtml, title:L.title, highlights:L.highlights, bullets:(L.bullets||[]).map(boldBullet).join("\n"), description:L.description, backend:backendFull, all:allText };
+  (L.bullets||[]).forEach((b,i)=> window._copy["b"+i]=boldBullet(b));
+  (L.backend||[]).forEach((b,i)=> window._copy["k"+i]=b);
+  const asins = L.asins||[]; window._copy.asins = asins.join("\n"); asins.forEach((a,i)=> window._copy["asin"+i]=a);
+  const tr = enCache[selected];
+  const showingEn = showEn && tr && tr.v===L.updatedAt;
+  if(showingEn) L = {...L, ...tr.data};
+
+  v.innerHTML = `
+    <button class="btn small back" id="backBtn">← All SKUs</button>
+    <div class="head">
+      <div>${L.account?`<div class="crumb">${esc(accOf(L))} › <span class="mkt-tag">${esc(mktOf(L))}</span></div>`:""}
+        <span class="sku-big">${esc(L.sku)}</span>
+        <span class="status">${L.listed
+          ? `<span class="badge-ok">✓ Listed</span>${canWrite?`<button class="linkbtn" id="unlistBtn">Undo</button>`:""}`
+          : (canWrite?`<button class="btn listbtn" id="listBtn">Mark as listed</button>`:`<span class="badge-ok" style="color:var(--muted);border-color:var(--line);background:none">Not listed yet</span>`)}</span>
+        ${L.productName?`<p class="pname">${esc(L.productName)}</p>`:""}
+        <div class="updated">Last saved ${L.updatedAt?new Date(L.updatedAt).toLocaleString():"—"}</div></div>
+      <div class="actions">
+        <button class="btn" id="dlOneBtn">Download</button>
+        <button class="btn" id="enBtn" ${translating?"disabled":""}>${translating?"Translating…":(showingEn?"Show original":"English")}</button>
+        ${canWrite?`<select class="moveSel" id="moveSel" aria-label="Move to account and marketplace"><option value="">${L.account?"Move":"Sort"}</option>${ACCOUNTS.map(a=>marketsFor(a).map(m=>`<option value="${esc(a+"|"+m)}" ${L.account===a&&L.market===m?"disabled":""}>${esc(accName(a))} › ${m}</option>`).join("")).join("")}</select>`:""}
+        ${canWrite?`<button class="btn" id="editBtn">Edit</button><button class="btn danger" id="delBtn">Delete</button>`:""}
+      </div>
+    </div>
+
+    ${asins.length?`<section class="sec asin-sec">
+      <div class="sec-h"><h2>ASIN${asins.length>1?"s":""}</h2>${asins.length>1?`<button class="copy" data-copy="asins">Copy all</button>`:""}</div>
+      <div class="asins">${asins.map((a,i)=>`<span class="asin">${asinLink(L.market,a)}<button class="copy" data-copy="asin${i}">Copy</button></span>`).join("")}</div>
+    </section>`:""}
+
+    ${showingEn?`<div class="notice" style="margin:0 0 16px">Showing English translation. Copy buttons still copy the original text.</div>`:""}
+    <section class="sec">
+      <div class="sec-h"><h2>Title</h2><div class="chips">${meter((L.title||"").length,LIMITS.title)}<button class="copy" data-copy="title">Copy</button></div></div>
+      <p class="title-text">${esc(L.title)}</p>
+    </section>
+
+    ${L.highlights?`<section class="sec">
+      <div class="sec-h"><h2>Item highlights</h2><button class="copy" data-copy="highlights">Copy</button></div>
+      <div class="hl">${esc(L.highlights)}</div>
+    </section>`:""}
+
+    <section class="sec">
+      <div class="sec-h"><h2>Bullet points</h2><button class="copy" data-copy="bullets">Copy all</button></div>
+      <ul class="bullets">${(L.bullets||[]).map((b,i)=>`
+        <li><div>${splitBullet(b)}</div>
+          <div class="bm">${meter(b.length,LIMITS.bullet)}<br><button class="copy" data-copy="b${i}" style="margin-top:4px">Copy</button></div></li>`).join("") || `<li style="color:var(--muted)">No bullet points</li>`}
+      </ul>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Description</h2><div class="chips"><span class="meter">${(L.description||"").length} chars</span><button class="copy" data-copy="description">Copy</button></div></div>
+      <div class="desc">${renderDesc(L.description) || `<p style="color:var(--muted)">No description</p>`}</div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Description (HTML)</h2><div class="chips"><span class="meter">${descHtml.length} chars</span><button class="copy" data-copy="descHtml">Copy</button></div></div>
+      ${descHtml ? `<pre class="htmlcode">${esc(descHtml)}</pre>` : `<p style="color:var(--muted);margin:0">Add a description and the HTML shows here.</p>`}
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Backend search terms</h2><div class="chips">${meter(bTotal,LIMITS.backendBytes,"bytes total")}<button class="copy" data-copy="backend">Copy combined</button></div></div>
+      <div class="terms">${(L.backend||[]).map((b,i)=> b?`
+        <div class="term"><div class="term-h"><span>Search terms ${i+1} · ${bytes(b)} bytes</span><button class="copy" data-copy="k${i}">Copy</button></div>
+        <div class="term-body">${esc(b)}</div></div>`:"").join("")}</div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Product images <span class="meter" id="imgCount"></span></h2><div class="chips">
+        ${canWrite?`<label class="copy filebtn">Upload images<input type="file" id="imgMulti" accept="image/*" multiple hidden></label>`:""}
+        <button class="copy" id="dlImgsBtn">Download all</button></div></div>
+      <div class="imgs" id="imgGrid"></div>
+      ${canWrite?`<p class="imgs-note">Up to 7 images · first one is the main image · drag and drop works too</p>`:""}
+    </section>`;
+  $("#main").scrollTop = 0;
+  renderImgs(); loadImages(selected);
+}
+
+function renderEditor(){
+  const L = editingKey ? (editEn ? {...listings[editingKey], ...enCache[editingKey].data} : listings[editingKey]) : { account:"", market:"", sku:"", productName:"", title:"", highlights:"", bullets:[], description:"", backend:["","","","",""] };
+  const bk = [...(L.backend||[]), "","","","",""].slice(0,5);
+  $("#view").innerHTML = `
+    <button class="btn small back" id="backBtn">← All SKUs</button>
+    <div class="head"><h2 style="margin:0;font-size:22px">${editingKey?"Edit "+esc(L.sku):"New listing"}<div class="ctxline">${editingKey ? (L.account?`${esc(accName(L.account))} › ${esc(L.market)}`:"Not sorted yet") : "Choose the brand and marketplace below"}</div></h2>
+      <div class="actions"><button class="btn" id="cancelBtn">Cancel</button><button class="btn primary" id="saveBtn">Save listing</button></div></div>
+
+    ${editEn?`<div class="notice" style="margin:0 0 16px">Editing in English. When you save, only the parts you changed are translated back to ${esc(LANG_NAME[enCache[editingKey].lang]||enCache[editingKey].lang)} and saved.</div>`:""}
+    <section class="sec paste">
+      <div class="sec-h"><h2 style="color:var(--ink)">Quick fill</h2></div>
+      <p>${editingKey?"Paste the whole updated listing (Title:, Item Highlights:, Bullet points:, Description:, Backend search terms 1–5:) and press Fill fields. Only the sections you paste are replaced — the rest stay as they are.":"Paste the whole listing (Title:, Item Highlights:, Bullet points:, Description:, Backend search terms 1–5:) and press Fill fields."}</p>
+      <div class="field"><textarea id="pasteBox" placeholder="Title:&#10;...&#10;&#10;Bullet points:&#10;• ..."></textarea></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="fillBtn">Fill fields</button><button class="btn" id="clearBtn" title="Clears title, highlights, bullets, description and backend terms. SKU, ASIN and images stay.">Clear fields</button></div>
+    </section>
+
+    <section class="sec">
+      ${editingKey?"":`<div class="row2">
+        <div class="field"><label for="f_acc">Brand</label><select id="f_acc" class="fsel"><option value="">Choose brand…</option>${ACCOUNTS.map(a=>`<option value="${esc(a)}" ${ctx&&ctx.acc===a?"selected":""}>${esc(accName(a))}</option>`).join("")}</select></div>
+        <div class="field"><label for="f_mkt">Marketplace</label><select id="f_mkt" class="fsel"><option value="">Choose marketplace…</option>${marketsFor(ctx&&ctx.acc).map(m=>`<option ${ctx&&ctx.mkt===m?"selected":""}>${m}</option>`).join("")}</select></div>
+      </div><div class="err" id="accErr" style="margin:-8px 0 12px"></div>`}
+      <div class="field"><label for="f_sku">SKU</label><input id="f_sku" class="mono" value="${esc(L.sku)}" placeholder="e.g. LED-ST64-AMB-8W"><div class="err" id="skuErr"></div></div>
+      ${editingKey?`<div class="field"><label>ASIN</label><div id="asinRows">${((L.asins||[]).length?L.asins:[""]).map(asinRow).join("")}</div><button type="button" class="btn small" id="addAsinBtn">+ Add another ASIN</button><div class="err" id="asinFErr"></div></div>`:""}
+      <div class="field"><label for="f_title">Title <span id="m_title"></span></label><textarea id="f_title" rows="2">${esc(L.title)}</textarea></div>
+      <div class="field"><label for="f_hl">Item highlights</label><textarea id="f_hl" rows="2">${esc(L.highlights)}</textarea></div>
+      <div class="field"><label for="f_bul">Bullet points <span class="meter">one per line</span></label><textarea id="f_bul" rows="8">${esc((L.bullets||[]).join("\n"))}</textarea></div>
+      <div class="field"><label for="f_desc">Description <span class="meter">blank line between sections</span></label><textarea id="f_desc" rows="12">${esc(L.description)}</textarea></div>
+      <div class="field"><label>Description (HTML) <span class="meter" id="m_html"></span></label><pre class="htmlcode" id="f_html"></pre></div>
+      ${bk.map((b,i)=>`<div class="field"><label for="f_k${i}">Backend search terms ${i+1} <span class="meter" id="m_k${i}"></span></label><input id="f_k${i}" value="${esc(b)}"></div>`).join("")}
+    </section>
+    <div class="actions" style="justify-content:flex-end"><button class="btn" id="cancelBtn2">Cancel</button><button class="btn primary" id="saveBtn2">Save listing</button></div>`;
+  const upd = () => {
+    if(!$("#f_title")) return;
+    const t=$("#f_title").value; $("#m_title").innerHTML = meter(t.length,LIMITS.title);
+    for(let i=0;i<5;i++) $("#m_k"+i).textContent = bytes($("#f_k"+i).value)+" bytes";
+    const pa = parseAsins(asinVals());
+    if($("#asinFErr")) $("#asinFErr").textContent = pa.bad.length ? `${pa.bad.join(", ")} doesn't look like an ASIN — it should be 10 letters/numbers.` : "";
+    const h = descToHtml($("#f_desc").value); $("#f_html").textContent = h || "Type a description above — the HTML builds here as you type."; $("#m_html").textContent = h.length+" chars";
+  };
+  $("#view").addEventListener("input", upd); upd();
+  $("#main").scrollTop = 0;
+  (editingKey ? $("#f_title") : $("#pasteBox")).focus();
+}
+
+function fillFromPaste(){
+  const txt = $("#pasteBox").value;
+  if(!txt.trim()) return toast("Paste the listing text first");
+  const p = parseListing(txt);
+  if(editingKey){
+    let n = 0;
+    if(p.title){ $("#f_title").value = p.title; n++; }
+    if(p.highlights){ $("#f_hl").value = p.highlights; n++; }
+    if(p.bullets && p.bullets.length){ $("#f_bul").value = p.bullets.join("\n"); n++; }
+    if(p.description){ $("#f_desc").value = p.description; n++; }
+    (p.backend||[]).forEach((b,i)=>{ if(b && $("#f_k"+i)){ $("#f_k"+i).value = b; n++; } });
+    $("#view").dispatchEvent(new Event("input",{bubbles:true}));
+    toast(n ? "Fields updated — check and press Save listing" : "Couldn't find any sections — check the format");
+    $("#f_title").focus();
+    return;
+  }
+  $("#f_title").value = p.title; $("#f_hl").value = p.highlights;
+  $("#f_bul").value = p.bullets.join("\n"); $("#f_desc").value = p.description;
+  p.backend.forEach((b,i)=> $("#f_k"+i).value = b);
+  $("#view").dispatchEvent(new Event("input",{bubbles:true}));
+  toast(p.title ? "Fields filled — add the SKU and save" : "Couldn't find a “Title:” line — check the format");
+  $("#f_sku").focus();
+}
+
+/* ---------- Product images ---------- */
+const IMG_SLOTS = 7;
+const imgCache = {};          // key -> [dataURL|null x7]
+const imgLoading = {};
+const imgBusy = new Set();    // "key|slot"
+let imgCol = null;
+const imgId = (k,i) => k+"__img"+i;
+function imgErr(e){
+  if(e && e.name==="QuotaExceededError") return "Browser storage is full — remove some images";
+  if(e && (e.code==="permission-denied"||e.code==="invalid_argument")) return "No permission — allow the listingImages collection in Firestore rules";
+  return "Image upload failed — try again";
+}
+async function imgGet(k,i){
+  const id = imgId(k,i);
+  if((store==="fb"||store==="db") && imgCol){
+    const s = await imgCol.doc(id).get();
+    if(!s || s.exists===false) return null;
+    const d = typeof s.data==="function" ? s.data() : s.data;
+    return (d && d.data) || null;
+  }
+  if(store==="local"){ try{ return localStorage.getItem("lv:img:"+id); }catch(e){ return null; } }
+  return null;
+}
+async function imgSet(k,i,data){
+  const id = imgId(k,i);
+  if((store==="fb"||store==="db") && imgCol) await imgCol.doc(id).set({ key:k, slot:i, data, updatedAt:Date.now() });
+  else if(store==="local") localStorage.setItem("lv:img:"+id, data);
+}
+async function imgDel(k,i){
+  const id = imgId(k,i);
+  if((store==="fb"||store==="db") && imgCol) await imgCol.doc(id).delete();
+  else if(store==="local"){ try{ localStorage.removeItem("lv:img:"+id); }catch(e){} }
+}
+async function loadImages(k){
+  if(!k || imgCache[k] || imgLoading[k] || store==="memory") return;
+  imgLoading[k] = true;
+  const arr = await Promise.all(Array.from({length:IMG_SLOTS},(_,i)=>imgGet(k,i).catch(e=>{ console.error(e); return null; })));
+  delete imgLoading[k];
+  imgCache[k] = arr;
+  if(selected===k && mode==="view") renderImgs();
+}
+function renderImgs(){
+  const g = $("#imgGrid"); if(!g) return;
+  const k = selected, arr = imgCache[k];
+  $("#imgCount").textContent = arr ? `${arr.filter(Boolean).length} / ${IMG_SLOTS}` : "";
+  g.innerHTML = Array.from({length:IMG_SLOTS},(_,i)=>{
+    const src = arr && arr[i], busy = imgBusy.has(k+"|"+i);
+    const n = `<span class="slot-n">${i===0?"Main":i+1}</span>`;
+    if(!arr) return `<div class="slot empty">${n}<div class="slot-busy">Loading…</div></div>`;
+    if(src) return `<div class="slot"><img src="${src}" alt="Image ${i+1} of ${esc(listings[k]?.sku)}">${n}
+      <div class="slot-bar"><button class="slot-act" data-imgdl="${i}" title="Download" aria-label="Download image ${i+1}">⬇</button>${canWrite?`<label class="slot-act" title="Replace" aria-label="Replace image ${i+1}">↻<input type="file" accept="image/*" data-imgslot="${i}" hidden></label><button class="slot-act rm" data-imgrm="${i}" title="Remove" aria-label="Remove image ${i+1}">✕</button>`:""}</div>
+      ${busy?`<div class="slot-busy">Uploading…</div>`:""}</div>`;
+    return `<div class="slot empty">${n}${canWrite?`<label class="slot-add"><input type="file" accept="image/*" data-imgslot="${i}" hidden><span>+</span>Upload</label>`:""}${busy?`<div class="slot-busy">Uploading…</div>`:""}</div>`;
+  }).join("");
+}
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      let max = 1600, q = 0.88, out = "";
+      for(let t=0;t<10;t++){
+        const sc = Math.min(1, max/Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1,Math.round(im.naturalWidth*sc)); c.height = Math.max(1,Math.round(im.naturalHeight*sc));
+        const x = c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height);
+        out = c.toDataURL("image/jpeg", q);
+        if(out.length < 900000) break;
+        if(q > 0.65) q -= 0.08; else max = Math.round(max*0.8);
+      }
+      res(out);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Not an image")); };
+    im.src = url;
+  });
+}
+async function addImages(files, slot){
+  const k = selected; if(!k) return;
+  files = [...files].filter(f=>f.type.startsWith("image/"));
+  if(!files.length) return toast("Pick an image file");
+  if(!imgCache[k]) await loadImages(k);
+  const arr = imgCache[k] || Array(IMG_SLOTS).fill(null); imgCache[k] = arr;
+  let slots = slot!=null ? [slot] : arr.map((v,i)=>v?-1:i).filter(i=>i>=0);
+  if(!slots.length) return toast("All 7 image slots are full — remove one first");
+  if(slot==null && files.length>slots.length) toast(`Only ${slots.length} empty slot${slots.length>1?"s":""} — extra images skipped`);
+  const jobs = slots.slice(0, files.length).map((i,j)=>[i, files[j]]);
+  jobs.forEach(([i])=>imgBusy.add(k+"|"+i)); renderImgs();
+  let done = 0;
+  for(const [i,f] of jobs){
+    try{ const d = await compressImage(f); await imgSet(k,i,d); arr[i] = d; done++; }
+    catch(e){ console.error(e); toast(imgErr(e)); jobs.forEach(([j])=>imgBusy.delete(k+"|"+j)); break; }
+    finally{ imgBusy.delete(k+"|"+i); if(selected===k) renderImgs(); }
+  }
+  if(done) toast(done>1 ? `${done} images saved` : "Image saved");
+}
+async function removeImage(i){
+  const k = selected, arr = imgCache[k]; if(!arr || !arr[i]) return;
+  if(!confirm(`Remove image ${i+1}?`)) return;
+  try{ await imgDel(k,i); arr[i] = null; renderImgs(); toast("Image removed"); }
+  catch(e){ console.error(e); toast("Couldn't remove — try again"); }
+}
+function dataUrlBlob(u){
+  const [h,b] = u.split(","); const mime = (h.match(/:(.*?);/)||[])[1] || "image/jpeg";
+  const bin = atob(b), a = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i);
+  return new Blob([a], {type:mime});
+}
+async function downloadImage(i){
+  const L = listings[selected], d = (imgCache[selected]||[])[i]; if(!L || !d) return;
+  await downloadFile(`${safeName(L.sku)}_${i===0?"main":i+1}.jpg`, dataUrlBlob(d), "image/jpeg");
+}
+async function downloadAllImages(){
+  const arr = imgCache[selected] || [];
+  const idx = arr.map((v,i)=>v?i:-1).filter(i=>i>=0);
+  if(!idx.length) return toast("No images to download yet");
+  for(const i of idx){ await downloadImage(i); await new Promise(r=>setTimeout(r,350)); }
+}
+async function moveImages(oldK, newK){
+  if(!oldK || oldK===newK) return;
+  const arr = imgCache[oldK];
+  for(let i=0;i<IMG_SLOTS;i++){
+    let d = null;
+    try{ d = arr ? arr[i] : await imgGet(oldK,i); }catch(e){}
+    if(d){ try{ await imgSet(newK,i,d); await imgDel(oldK,i); }catch(e){ console.error(e); } }
+  }
+  if(arr){ imgCache[newK] = arr; delete imgCache[oldK]; }
+}
+async function deleteImages(k){
+  for(let i=0;i<IMG_SLOTS;i++){ try{ await imgDel(k,i); }catch(e){} }
+  delete imgCache[k];
+}
+
+/* ---------- ASINs ---------- */
+const AMZ = { UK:"amazon.co.uk", GB:"amazon.co.uk", DE:"amazon.de", FR:"amazon.fr", IT:"amazon.it", ES:"amazon.es", NL:"amazon.nl", SE:"amazon.se", PL:"amazon.pl", BE:"amazon.com.be", IE:"amazon.ie", US:"amazon.com", CA:"amazon.ca" };
+const amzHost = m => AMZ[String(m||"").toUpperCase()] || "amazon.co.uk";
+const amzUrl = (m,a) => `https://www.${amzHost(m)}/dp/${encodeURIComponent(a)}`;
+const asinRow = a => `<div class="asin-row"><input class="mono asin-in f-asin" value="${esc(a)}" placeholder="e.g. B0CXYZ1234" autocomplete="off" spellcheck="false" aria-label="ASIN"><button type="button" class="slot-act rm asin-rm" aria-label="Remove this ASIN">✕</button></div>`;
+const asinVals = () => [...document.querySelectorAll(".f-asin")].map(i=>i.value).join(",");
+function parseAsins(v){
+  const parts = String(v||"").toUpperCase().split(/[\s,;]+/).filter(Boolean);
+  return { ok:[...new Set(parts.filter(a=>/^[A-Z0-9]{10}$/.test(a)))], bad:parts.filter(a=>!/^[A-Z0-9]{10}$/.test(a)) };
+}
+const asinLink = (m,a) => `<a class="amz" href="${amzUrl(m,a)}" target="_blank" rel="noopener" title="Open on ${amzHost(m)}">${esc(a)}</a>`;
+async function addAsins(){
+  const L = listings[selected], inp = $("#asinIn"); if(!L || !inp) return;
+  const parts = inp.value.toUpperCase().split(/[\s,;]+/).filter(Boolean);
+  if(!parts.length){ $("#asinErr").textContent = "Type the ASIN first."; inp.focus(); return; }
+  const bad = parts.filter(a=>!/^[A-Z0-9]{10}$/.test(a));
+  if(bad.length){ $("#asinErr").textContent = `${bad.join(", ")} doesn't look like an ASIN — it should be 10 letters/numbers, like B0CXYZ1234.`; inp.focus(); return; }
+  const cur = L.asins || [];
+  const add = [...new Set(parts)].filter(a=>!cur.includes(a));
+  if(!add.length){ $("#asinErr").textContent = "That ASIN is already saved."; return; }
+  const data = {...L, asins:[...cur, ...add]};
+  listings[selected] = data;
+  try{ await persist(selected, data); toast(add.length>1 ? `${add.length} ASINs saved` : `ASIN ${add[0]} saved`); }
+  catch(e){ console.error(e); toast("Couldn't save ASIN — try again"); }
+  renderView(); const n=$("#asinIn"); if(n) n.focus();
+}
+async function removeAsin(i){
+  const L = listings[selected]; const a = (L.asins||[])[i]; if(!a) return;
+  if(!confirm(`Remove ASIN ${a}?`)) return;
+  const data = {...L, asins:L.asins.filter((_,j)=>j!==i)};
+  listings[selected] = data;
+  try{ await persist(selected, data); toast(`ASIN ${a} removed`); }catch(e){ toast("Couldn't update — try again"); }
+  renderView();
+}
+
+/* ---------- Storage ---------- */
+async function persist(key, data){
+  if(store==="fb") await col.doc(key).set(data);
+  else if(store==="db") await col.doc(key).set(data);
+  else if(store==="local"){ try{ localStorage.setItem("lv:listings", JSON.stringify(listings)); }catch(e){} }
+}
+async function remove(key){
+  if(store==="fb") await col.doc(key).delete();
+  else if(store==="db") await col.doc(key).delete();
+  else if(store==="local"){ try{ localStorage.setItem("lv:listings", JSON.stringify(listings)); }catch(e){} }
+}
+
+async function save(){
+  const sku = $("#f_sku").value.trim();
+  if(!sku){ $("#skuErr").textContent = "Add a SKU — every listing is saved under its SKU."; $("#f_sku").focus(); return; }
+  const prev = editingKey ? listings[editingKey] : {};
+  const account = editingKey ? (prev.account || "") : $("#f_acc").value, market = editingKey ? (prev.market || "") : $("#f_mkt").value, productName = prev.productName || "";
+  if(!editingKey && (!account || !market)){ $("#accErr").textContent = "Choose the brand and marketplace for this listing."; (account ? $("#f_mkt") : $("#f_acc")).focus(); $("#accErr").scrollIntoView({block:"center"}); return; }
+  const key = account ? keyFor(account, market, sku) : clean(sku).slice(0,190);
+  if(key!==editingKey && listings[key] && !confirm(`SKU ${sku} already exists${account?` in ${account} ${market}`:""}. Replace it?`)) return;
+  const pa = parseAsins(asinVals());
+  if(pa.bad.length){ $("#asinFErr").textContent = `${pa.bad.join(", ")} doesn't look like an ASIN — it should be 10 letters/numbers, like B0CXYZ1234.`; $(".f-asin").focus(); return; }
+  const data = {
+    account, market, sku, productName, title:$("#f_title").value.trim(), highlights:$("#f_hl").value.trim(),
+    bullets:$("#f_bul").value.split("\n").map(s=>s.replace(/^[•\-\*]\s*/,"").trim()).filter(Boolean),
+    description:$("#f_desc").value.trim(),
+    listed: !!prev.listed, listedAt: prev.listedAt || null, asins: pa.ok,
+    backend:[0,1,2,3,4].map(i=>$("#f_k"+i).value.trim()),
+    createdAt: prev.createdAt || prev.updatedAt || Date.now(),
+    updatedAt:Date.now()
+  };
+  if(editEn && editingKey){
+    const c = enCache[editingKey], en = c.data, orig = prev, lang = c.lang;
+    const enBul = en.bullets||[], enBk = [...(en.backend||[]),"","","","",""].slice(0,5);
+    const oBul = orig.bullets||[], oBk = [...(orig.backend||[]),"","","","",""].slice(0,5);
+    const jobs = []; // [setter, englishText]
+    const field = (name, enText, oText) => { if(data[name]===(enText||"").trim()) data[name]=oText||""; else jobs.push([v=>data[name]=v, data[name]]); };
+    field("title", en.title, orig.title); field("highlights", en.highlights, orig.highlights); field("description", en.description, orig.description);
+    const newEnBul = data.bullets.slice(); data.bullets = newEnBul.map((b,i)=>{ if(enBul[i]!==undefined && b===enBul[i].trim() && oBul[i]!==undefined) return oBul[i]; jobs.push([v=>data.bullets[i]=v, b]); return b; });
+    const newEnBk = data.backend.slice(); data.backend = newEnBk.map((b,i)=>{ if(b===(enBk[i]||"").trim()) return oBk[i]||""; jobs.push([v=>data.backend[i]=v, b]); return b; });
+    if(jobs.length){
+      $("#saveBtn").disabled = $("#saveBtn2").disabled = true;
+      $("#saveBtn").textContent = $("#saveBtn2").textContent = "Translating…";
+      try{
+        const {items} = await translateAll(jobs.map(j=>j[1]), lang, "en");
+        jobs.forEach((j,i)=>j[0](items[i]));
+      }catch(e){
+        console.error(e); toast("Couldn't translate back — nothing saved. Try again.");
+        $("#saveBtn").disabled = $("#saveBtn2").disabled = false;
+        $("#saveBtn").textContent = $("#saveBtn2").textContent = "Save listing";
+        return;
+      }
+    }
+    // remember the English version the user wrote, so “English” shows it instantly
+    enCache[key] = { v:data.updatedAt, lang, data:{ title:$("#f_title").value.trim(), highlights:$("#f_hl").value.trim(), description:$("#f_desc").value.trim(), bullets:newEnBul, backend:newEnBk } };
+  }
+  const wasEn = editEn; editEn = false;
+  const oldKey = editingKey;
+  listings[key] = data;
+  if(oldKey && oldKey!==key) delete listings[oldKey];
+  try{
+    await persist(key, data);
+    if(oldKey && oldKey!==key){ await remove(oldKey); await moveImages(oldKey, key); }
+    toast(wasEn ? `Saved — changes translated to ${LANG_NAME[enCache[key].lang]||enCache[key].lang}` : "Listing saved");
+  }catch(e){
+    toast(e && (e.code==="invalid_argument"||e.code==="permission-denied") ? "No permission to save — check Firestore rules" : "Save failed — try again");
+    console.error(e);
+  }
+  selected = key; mode = "view"; editingKey = null; showEn = wasEn; // stay in the language you edited in
+  if(account){ openOnly(account, market); ctx={acc:account,mkt:market}; }
+  renderList(); renderView();
+}
+
+async function setListed(on){
+  const L = listings[selected]; if(!L) return;
+  if(!on && !confirm(`Mark ${L.sku} as not listed?`)) return;
+  const data = {...L, listed:on, listedAt: on ? Date.now() : null};
+  listings[selected] = data;
+  try{ await persist(selected, data); toast(on ? `${L.sku} marked as listed` : `${L.sku} marked as not listed`); }
+  catch(e){ toast("Couldn't update — try again"); }
+  renderList(); renderView();
+  if(on){ const n=$("#asinIn"); if(n){ n.focus(); n.scrollIntoView({block:"center"}); } }
+}
+
+async function del(){
+  const L = listings[selected];
+  if(!confirm(`Delete listing ${L.sku} (${accOf(L)} ${mktOf(L)})? This can't be undone.`)) return;
+  const k = selected; delete listings[k];
+  try{ await remove(k); await deleteImages(k); toast("Listing deleted"); }catch(e){ toast("Delete failed"); }
+  selected = null; mode = "welcome"; renderList(); renderView();
+}
+
+/* ---------- Events ---------- */
+function goHome(){
+  if(mode==="edit" && !confirm("Leave without saving your changes?")) return;
+  selected = null; mode = "welcome"; editingKey = null; showEn = false; editEn = false; ctx = null;
+  openAcc.clear(); openMkt.clear(); $("#search").value = "";
+  renderList(); renderView();
+  $("#list").scrollTop = 0; $("#main").scrollTop = 0; window.scrollTo(0,0);
+}
+document.addEventListener("keydown", e => { if(e.target.id==="homeBtn" && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); goHome(); } });
+document.addEventListener("click", e => {
+  if(e.target.closest("#homeBtn")){ goHome(); return; }
+  if(e.target.closest("#statusBtn")){ if(mode==="edit" && !confirm("Leave without saving your changes?")) return; mode="status"; selected=null; editingKey=null; editEn=false; ctx=null; openAcc.clear(); openMkt.clear(); $("#search").value=""; renderList(); $("#list").scrollTop=0; renderView(); $("#main").scrollTop=0; return; }
+  const sf = e.target.closest("[data-sf]"); if(sf){ statusFilter = sf.dataset.sf; renderView(); return; }
+  if(e.target.closest(".asin-link")) return;
+  if(e.target.closest("#dlStatusBtn")){ downloadStatus(); return; }
+  const ga = e.target.closest("[data-acc]");
+  if(ga){ const a=ga.dataset.acc; if(openAcc.has(a)) openAcc.delete(a); else { openAcc.clear(); openAcc.add(a); [...openMkt].forEach(x=>{ if(!x.startsWith(a+"|")) openMkt.delete(x); }); } renderList(); return; }
+  const gm = e.target.closest("[data-mkt]");
+  if(gm){ const m=gm.dataset.mkt; const [a,mk]=m.split("|");
+    if(ctx && ctx.acc===a && ctx.mkt===mk && openMkt.has(m)) openMkt.delete(m);
+    else { openMkt.clear(); openMkt.add(m); }
+    ctx={acc:a,mkt:mk}; renderList(); return; }
+  const it = e.target.closest(".item");
+  if(it){ selected = it.dataset.k; mode = "view"; showEn = false; renderList(); renderView(); return; }
+  const c = e.target.closest("[data-copy]");
+  if(c){ copyText(window._copy[c.dataset.copy]||"", c); return; }
+  const idl = e.target.closest("[data-imgdl]"); if(idl){ downloadImage(+idl.dataset.imgdl); return; }
+  const irm = e.target.closest("[data-imgrm]"); if(irm){ removeImage(+irm.dataset.imgrm); return; }
+  if(e.target.id==="addAsinBtn"){ $("#asinRows").insertAdjacentHTML("beforeend", asinRow("")); const all=document.querySelectorAll(".f-asin"); all[all.length-1].focus(); return; }
+  const ar = e.target.closest(".asin-rm");
+  if(ar){ const rows=document.querySelectorAll(".asin-row"); if(rows.length>1) ar.parentElement.remove(); else ar.parentElement.querySelector("input").value=""; $("#view").dispatchEvent(new Event("input",{bubbles:true})); return; }
+  const arm = e.target.closest("[data-asinrm]"); if(arm){ removeAsin(+arm.dataset.asinrm); return; }
+  const id = e.target.id;
+  if(id==="newBtn"){
+    editingKey=null; mode="edit"; renderView(); }
+  else if(id==="editBtn"){
+    const c = enCache[selected];
+    editEn = !!(showEn && c && c.v===listings[selected].updatedAt && c.lang && c.lang!=="en");
+    editingKey=selected; mode="edit"; renderView(); }
+  else if(id==="delBtn") del();
+  else if(id==="dlOneBtn") downloadOne();
+  else if(id==="enBtn") toggleEnglish();
+  else if(id==="listBtn"||id==="unlistBtn") setListed(id==="listBtn");
+  else if(id==="dlAllBtn") downloadAll();
+  else if(id==="asinAddBtn") addAsins();
+  else if(id==="dlImgsBtn") downloadAllImages();
+  else if(id==="saveBtn"||id==="saveBtn2") save();
+  else if(id==="fillBtn") fillFromPaste();
+  else if(id==="clearBtn"){
+    if(!confirm("Clear title, highlights, bullets, description and backend terms? SKU, ASIN and images will stay.")) return;
+    ["#f_title","#f_hl","#f_bul","#f_desc","#pasteBox"].forEach(s=>{ if($(s)) $(s).value = ""; });
+    for(let i=0;i<5;i++) if($("#f_k"+i)) $("#f_k"+i).value = "";
+    $("#view").dispatchEvent(new Event("input",{bubbles:true}));
+    toast("Fields cleared — paste the new listing or type it in");
+    if($("#pasteBox")) $("#pasteBox").focus();
+  }
+  else if(id==="cancelBtn"||id==="cancelBtn2"){ editEn=false; mode = selected&&listings[selected] ? "view" : "welcome"; editingKey=null; renderView(); }
+  else if(id==="backBtn"){ mode="welcome"; editingKey=null; renderView(); }
+});
+$("#search").addEventListener("input", renderList);
+document.addEventListener("change", e => {
+  const t = e.target;
+  if(t.id==="imgMulti" && t.files.length){ addImages(t.files, null); t.value=""; }
+  else if(t.dataset && t.dataset.imgslot!=null && t.files.length){ addImages(t.files, +t.dataset.imgslot); t.value=""; }
+});
+document.addEventListener("change", e => {
+  if(e.target.id==="f_acc"){ const sel=$("#f_mkt"), cur=sel.value; sel.innerHTML = `<option value="">Choose marketplace…</option>` + marketsFor(e.target.value).map(m=>`<option ${cur===m?"selected":""}>${m}</option>`).join(""); }
+  if(e.target.id==="f_acc"||e.target.id==="f_mkt"){ const er=$("#accErr"); if(er) er.textContent=""; }
+});
+document.addEventListener("keydown", e => { if(e.target.id==="asinIn" && e.key==="Enter"){ e.preventDefault(); addAsins(); } });
+document.addEventListener("input", e => { if(e.target.id==="asinIn"){ const er=$("#asinErr"); if(er) er.textContent=""; } });
+["dragenter","dragover"].forEach(ev=>document.addEventListener(ev, e => { const g=e.target.closest&&e.target.closest("#imgGrid"); if(g && canWrite){ e.preventDefault(); g.classList.add("drag"); } }));
+document.addEventListener("dragleave", e => { const g=e.target.closest&&e.target.closest("#imgGrid"); if(g && !g.contains(e.relatedTarget)) g.classList.remove("drag"); });
+document.addEventListener("drop", e => { const g=e.target.closest&&e.target.closest("#imgGrid"); if(!g) return; e.preventDefault(); g.classList.remove("drag"); if(canWrite && e.dataTransfer.files.length) addImages(e.dataTransfer.files, null); });
+document.addEventListener("change", async e => {
+  if(e.target.id!=="moveSel" || !e.target.value) return;
+  const [a,m] = e.target.value.split("|"); const L = listings[selected];
+  const nk = keyFor(a,m,L.sku);
+  if(listings[nk] && !confirm(`${L.sku} already exists in ${a} ${m}. Replace it?`)){ e.target.value=""; return; }
+  const data = {...L, account:a, market:m, updatedAt:Date.now()};
+  const old = selected;
+  listings[nk]=data; if(old!==nk) delete listings[old];
+  try{ await persist(nk,data); if(old!==nk){ await remove(old); await moveImages(old,nk); } toast(`Moved to ${a} › ${m}`); }catch(err){ toast("Move failed — try again"); }
+  selected=nk; openOnly(a, m); ctx={acc:a,mkt:m}; renderList(); renderView();
+});
+
+/* ---------- Boot ---------- */
+renderList(); renderView();
+(async () => {
+  if(window.firebase){
+    try{
+      firebase.initializeApp(firebaseConfig);
+      store = "fb"; col = firebase.firestore().collection("listings"); imgCol = firebase.firestore().collection("listingImages");
+      $("#notice").innerHTML = `<div class="notice">Connecting to database…</div>`;
+      col.onSnapshot(snap => {
+        $("#notice").innerHTML = "";
+        const next = {};
+        snap.docs.forEach(d => { next[d.id] = d.data(); });
+        listings = next;
+        if(mode!=="edit"){ renderList(); renderView(); } else renderList();
+      }, err => {
+        console.error(err);
+        $("#notice").innerHTML = `<div class="notice">Database error: ${esc(err.code||err.message)}. Check Firestore is created and its rules allow read/write.</div>`;
+      });
+      return;
+    }catch(e){ console.error(e); }
+  }
+  $("#notice").innerHTML = `<div class="notice">Couldn't reach the database (no internet?). Saving to this browser only.</div>`;
+  try{
+    db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+  }catch(e){ db = null; }
+  try{ dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null; }catch(e){ dl = null; }
+  if(db){
+    store = "db"; col = db.collection("listings"); imgCol = db.collection("listingImages");
+    try{
+      const user = await window.claude.use("user");
+      if(user){ const cw = await user.can("data.write"); if(cw===false) canWrite = false; }
+    }catch(e){}
+    if(!canWrite){ $("#newBtn").style.display="none"; }
+    col.onSnapshot(snap => {
+      const next = {};
+      snap.docs.forEach(d => { next[d.id] = d.data(); });
+      listings = next;
+      if(mode!=="edit"){ renderList(); renderView(); } else renderList();
+    }, err => { console.error(err); $("#notice").innerHTML = `<div class="notice">Couldn't load saved listings. Reload the page to try again.</div>`; });
+  } else {
+    store = "local";
+    try{ const raw = localStorage.getItem("lv:listings"); if(raw) listings = JSON.parse(raw)||{}; }catch(e){}
+    $("#notice").innerHTML = `<div class="notice">Saving to this browser only. Open the published link while signed in to keep listings in your account.</div>`;
+    renderList(); renderView();
+  }
+})();
+</script>
+</body>
+</html>
